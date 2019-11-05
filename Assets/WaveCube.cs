@@ -5,6 +5,7 @@ using UnityEngine;
 public class WaveCube : MonoBehaviour {
 
     //頂点座標
+    Vector3[] StartVertex = new Vector3[4];
     Vector3[] EndVertex = new Vector3[4];
     Vector3[] SideVertex = new Vector3[16];
     //色の変更など
@@ -25,8 +26,23 @@ public class WaveCube : MonoBehaviour {
                                    7 + 8,  3 + 8,  1 + 8,
                                    5 + 8,  3 + 8,  7 + 8,
     };
+
+    //親
+    //private GameObject parentObj;
+    //マテリアル
+    public Material material;
+
+    //現在の分割部分（計算用）
+    private int divisionNum = 0;
+    CombineInstance[] combineInstanceAry;
+
+    private bool needReCulc;// = false;
+
+
+    //外部初期化を受け付ける内容
     //分割数
-    private int division = 10;
+    [SerializeField]
+    private int division = 10;//{ get { return division; } set { needReCulc = true; division = value; } }// = 10;
     //縦y
     private float vertical = 1f;
     //横x
@@ -50,27 +66,28 @@ public class WaveCube : MonoBehaviour {
     //上下反転
     private bool isInversion = false;
 
-    //親
-    //private GameObject parentObj;
-    //マテリアル
-    public Material material;
-
-    //メッシュ
-    Mesh meshFirst;
-    Mesh mesh;
-    Mesh meshLast;
-
-    //現在の分割部分（計算用）
-    private int divisionNum = 0;
-    CombineInstance[] combineInstanceAry;
+    [SerializeField]
+    private int Division { get { return division; } set { needReCulc = true; division = value; } }
 
     void Start() {
+        this.gameObject.AddComponent<MeshFilter>();
+        this.gameObject.AddComponent<MeshRenderer>();
+        this.gameObject.AddComponent<MeshCollider>();
+
         DisplayObject();
     }
 
     void Update() {
+        if (needReCulc) {
+            DisplayObject();
+            needReCulc = false;
+        }
     }
-
+    /*
+    private void CheckVariablesChange() {
+        needReCulc = true;
+    }
+    */
     private void DisplayObject() {
         // CombineMeshes()する時に使う配列   始端と終端も含めるので+3
         combineInstanceAry = new CombineInstance[division + 3];
@@ -83,11 +100,11 @@ public class WaveCube : MonoBehaviour {
             if (divisionNum == 0) {
                 //最初の一枚だけ別計算
                 //メッシュ作成
-                meshFirst = new Mesh();
+                Mesh meshFirst = new Mesh();
                 //メッシュリセット
                 meshFirst.Clear();
                 //メッシュへの頂点情報の追加
-                meshFirst.vertices = EndVertex;
+                meshFirst.vertices = StartVertex;
                 //メッシュへの面情報の追加
                 meshFirst.triangles = EndFace;
 
@@ -95,7 +112,7 @@ public class WaveCube : MonoBehaviour {
                 combineInstanceAry[0].mesh = meshFirst;
                 combineInstanceAry[0].transform = Matrix4x4.Translate(Vector3.zero);
             }
-            mesh = new Mesh();
+            Mesh mesh = new Mesh();
             //メッシュリセット
             mesh.Clear();
             //メッシュへの頂点情報の追加
@@ -110,7 +127,7 @@ public class WaveCube : MonoBehaviour {
             if (divisionNum == division) {
                 //最後の一枚だけ別計算
                 //メッシュ作成
-                meshLast = new Mesh();
+                Mesh meshLast = new Mesh();
                 //メッシュリセット
                 meshLast.Clear();
                 //メッシュへの頂点情報の追加
@@ -131,38 +148,37 @@ public class WaveCube : MonoBehaviour {
 
         //メッシュフィルター追加
         MeshFilter mesh_filter = new MeshFilter();
-        mesh_filter = this.gameObject.AddComponent<MeshFilter>();
+        //mesh_filter = this.gameObject.AddComponent<MeshFilter>();
+        mesh_filter = this.gameObject.GetComponent<MeshFilter>();
         //メッシュアタッチ
         mesh_filter.mesh = combinedMesh;
         //レンダラー追加 + マテリアルアタッチ
-        meshRenderer = this.gameObject.AddComponent<MeshRenderer>();
+        //meshRenderer = this.gameObject.AddComponent<MeshRenderer>();
+        meshRenderer = this.gameObject.GetComponent<MeshRenderer>();
         meshRenderer.material = material;
         //コライダーアタッチ
-        MeshCollider meshCollider = this.gameObject.AddComponent<MeshCollider>();
+        //MeshCollider meshCollider = this.gameObject.AddComponent<MeshCollider>();
+        MeshCollider meshCollider = this.gameObject.GetComponent<MeshCollider>();
         meshCollider.sharedMesh = mesh_filter.mesh;
         meshCollider.convex = true;
         meshCollider.isTrigger = true;
 
         //NormalMapの再計算
         mesh_filter.mesh.RecalculateNormals();
+
+
     }
 
     private void CalcVertices() {
 
         //上側手前左の頂点座標
-        Vector3 vertex1 = new Vector3(width / (float)division * (float)divisionNum,
-                                      vertical,
-                                      0);
+        Vector3 vertex1 = new Vector3(width / ( division + 1 ) * ( divisionNum + 0 ), vertical, 0);
         //上側手前右の頂点座標
-        Vector3 vertex2 = new Vector3(width / (float)division * (float)( divisionNum + 1 ),
-                                      vertical,
-                                      0);
+        Vector3 vertex2 = new Vector3(width / ( division + 1 ) * ( divisionNum + 1 ), vertical, 0);
         //下側手前左の頂点座標
-        Vector3 vertex3 = new Vector3(width / (float)division * (float)divisionNum,
-                                      0,
-                                      0);
+        Vector3 vertex3 = new Vector3(width / ( division + 1 ) * ( divisionNum + 0 ), 0, 0);
         //下側手前右の頂点座標
-        Vector3 vertex4 = new Vector3(width / (float)division * (float)( divisionNum + 1 ),
+        Vector3 vertex4 = new Vector3(width / ( division + 1 ) * ( divisionNum + 1 ),
                                       0,
                                       0);
         //全頂点数8にそれぞれ座標が2つずつある
@@ -196,21 +212,22 @@ public class WaveCube : MonoBehaviour {
             EndVertex[1] = new Vector3(vertex1.x, vertex1.y, vertex1.z + depth);
             EndVertex[2] = vertex3;
             EndVertex[3] = new Vector3(vertex3.x, vertex3.y, vertex3.z + depth);
-        } else if (divisionNum == division) {
+        }
+        if (divisionNum == division) {
             //最後の端面
-            EndVertex[0] = new Vector3(vertex2.x, vertex2.y, vertex2.z + depth);
-            EndVertex[1] = vertex2;
-            EndVertex[2] = new Vector3(vertex4.x, vertex4.y, vertex4.z + depth);
-            EndVertex[3] = vertex4;
+            StartVertex[0] = new Vector3(vertex2.x, vertex2.y, vertex2.z + depth);
+            StartVertex[1] = vertex2;
+            StartVertex[2] = new Vector3(vertex4.x, vertex4.y, vertex4.z + depth);
+            StartVertex[3] = vertex4;
         }
 
         //デバッグ用
         if (true && divisionNum == 0) {
-            for (int i = 0; i < EndVertex.Length; i++) {
+            for (int i = 0; i < StartVertex.Length; i++) {
                 GameObject marker = GameObject.CreatePrimitive(PrimitiveType.Sphere);
                 marker.transform.name = "FirstMarker";
                 marker.transform.parent = this.gameObject.transform;
-                marker.transform.localPosition = EndVertex[i];
+                marker.transform.localPosition = StartVertex[i];
                 marker.transform.localScale = Vector3.one * 0.1f;
                 marker.GetComponent<MeshRenderer>().material.color = Color.red;
             }
