@@ -8,12 +8,18 @@ public class WaveCube : MonoBehaviour {
     Vector3[] StartVertex = new Vector3[4];
     Vector3[] EndVertex = new Vector3[4];
     Vector3[] SideVertex = new Vector3[16];
+    //全頂点
+    Vector3[] AllVertex;
+    //合成後のメッシュから座標の重なる頂点をまとめたもの
+    int?[,] AllVertexKey;
     //色の変更など
     MeshRenderer meshRenderer;
+    //メッシュフィルター
+    MeshFilter mesh_filter;
 
     //面情報
-    int[] EndFace = new int[6]  { 1,      0,      3,
-                                  0,      2,      3 };
+    int[] EndFace = new int[6]   { 1,      0,      3,
+                                   0,      2,      3 };
     int[] SideFace = new int[24] { 2,      5,      4,
                                    2,      3,      5,
 
@@ -26,9 +32,7 @@ public class WaveCube : MonoBehaviour {
                                    7 + 8,  3 + 8,  1 + 8,
                                    5 + 8,  3 + 8,  7 + 8,
     };
-
-    //親
-    //private GameObject parentObj;
+    
     //マテリアル
     public Material material;
 
@@ -36,7 +40,8 @@ public class WaveCube : MonoBehaviour {
     private int divisionNum = 0;
     CombineInstance[] combineInstanceAry;
 
-    private bool needReCulc = false;
+    //メッシュの再計算が必要か
+    private bool needReCulc = true;
 
 
     //外部初期化を受け付ける内容
@@ -72,11 +77,8 @@ public class WaveCube : MonoBehaviour {
     private bool isInversion = false;
 
     void Start() {
-        this.gameObject.AddComponent<MeshFilter>();
-        this.gameObject.AddComponent<MeshRenderer>();
-        this.gameObject.AddComponent<MeshCollider>();
-
-        DisplayObject();
+        mesh_filter = this.gameObject.AddComponent<MeshFilter>();
+        meshRenderer = this.gameObject.AddComponent<MeshRenderer>();
     }
 
     void Update() {
@@ -85,6 +87,7 @@ public class WaveCube : MonoBehaviour {
             DisplayObject();
             needReCulc = false;
         }
+
     }
 
     //インスペクターからの変更時に再計算
@@ -95,13 +98,16 @@ public class WaveCube : MonoBehaviour {
     //子オブジェクトを全削除
     private void ChildrenDestroy() {
         foreach (Transform n in gameObject.transform) {
-            GameObject.Destroy(n.gameObject);
+            Destroy(n.gameObject);
         }
     }
 
     private void DisplayObject() {
         // CombineMeshes()する時に使う配列   始端と終端も含めるので+3
         combineInstanceAry = new CombineInstance[division + 3];
+
+        AllVertex = new Vector3[4 + division * 4 + 4];
+        AllVertexKey = new int?[4 + division * 4 + 4, 4];
 
         //メッシュ作成
         for (divisionNum = 0; divisionNum <= division; divisionNum++) {
@@ -150,34 +156,36 @@ public class WaveCube : MonoBehaviour {
                 combineInstanceAry[divisionNum + 2].mesh = meshLast;
                 combineInstanceAry[divisionNum + 2].transform = Matrix4x4.Translate(Vector3.zero);
             }
-            Debug.Log("run " + divisionNum);
         }
         //合成した（する）メッシュ
         Mesh combinedMesh = new Mesh();
         combinedMesh.name = transform.name;
         combinedMesh.CombineMeshes(combineInstanceAry);
 
-        //メッシュフィルター追加
-        MeshFilter mesh_filter = new MeshFilter();
-        //mesh_filter = this.gameObject.AddComponent<MeshFilter>();
-        mesh_filter = this.gameObject.GetComponent<MeshFilter>();
         //メッシュアタッチ
         mesh_filter.mesh = combinedMesh;
-        //レンダラー追加 + マテリアルアタッチ
-        //meshRenderer = this.gameObject.AddComponent<MeshRenderer>();
-        meshRenderer = this.gameObject.GetComponent<MeshRenderer>();
+        //レンダラーにマテリアルアタッチ
         meshRenderer.material = material;
-        //コライダーアタッチ
-        //MeshCollider meshCollider = this.gameObject.AddComponent<MeshCollider>();
-        //MeshCollider meshCollider = this.gameObject.GetComponent<MeshCollider>();
-        //meshCollider.sharedMesh = mesh_filter.mesh;
-        //meshCollider.convex = true;
-        //meshCollider.isTrigger = true;
 
         //NormalMapの再計算
         mesh_filter.mesh.RecalculateNormals();
-
-
+        
+        //meshのどの頂点がどの頂点になっているか
+        //事前に取得した頂点のそれぞれに当たる座標を検索する
+        for (int i = 0; i < AllVertex.Length; i++) {
+            //メッシュの頂点をひとつづつ見ていく
+            for (int j = 0; j < mesh_filter.mesh.vertexCount; j++) {
+                //事前の頂点とメッシュの頂点が重なるか
+                if (AllVertex[i] == mesh_filter.mesh.vertices[j]) {
+                    //見つけた頂点番号を保存するにあたり、既に同じ座標で見つけていないか確認
+                    for (int k = 0; k < AllVertexKey.GetLength(1); k++) {
+                        //まだ保存してない配列部分に保存
+                        if (AllVertexKey[i, k] == null)
+                            AllVertexKey[i, k] = j;
+                    }
+                }
+            }
+        }
     }
 
     private void CalcVertices() {
@@ -189,9 +197,7 @@ public class WaveCube : MonoBehaviour {
         //下側手前左の頂点座標
         Vector3 vertex3 = new Vector3(width / ( division + 1 ) * ( divisionNum + 0 ), 0, 0);
         //下側手前右の頂点座標
-        Vector3 vertex4 = new Vector3(width / ( division + 1 ) * ( divisionNum + 1 ),
-                                      0,
-                                      0);
+        Vector3 vertex4 = new Vector3(width / ( division + 1 ) * ( divisionNum + 1 ), 0, 0);
         //全頂点数8にそれぞれ座標が2つずつある
         for (int i = 0; i < 8 * 2; i++) {
             if (i % 8 == 0) {
@@ -213,7 +219,6 @@ public class WaveCube : MonoBehaviour {
             } else {
                 Debug.LogWarning("Calcration Error");
             }
-            Debug.Log("run" + i.ToString());
         }
 
         //端面用
@@ -233,6 +238,7 @@ public class WaveCube : MonoBehaviour {
         }
 
         //デバッグ用
+        //頂点に球を付ける
         if (true && divisionNum == 0) {
             for (int i = 0; i < StartVertex.Length; i++) {
                 GameObject marker = GameObject.CreatePrimitive(PrimitiveType.Sphere);
@@ -263,7 +269,11 @@ public class WaveCube : MonoBehaviour {
             }
         }
 
-
+        //全頂点を保持
+        for (int i = 0; i < SideVertex.Length / 2; i++) {
+            //4つ飛ばしで8つ保存することで、端面の頂点までカバー
+            AllVertex[divisionNum * SideVertex.Length / 4 + i] = SideVertex[i];
+        }
     }
 
 }

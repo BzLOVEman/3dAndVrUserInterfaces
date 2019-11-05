@@ -150,6 +150,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   material: {fileID: 2100000, guid: b5bea8fdb9a3cfc4aa5298d8a14f853f, type: 2}
+  division: 1
+  vertical: 1
+  width: 6
+  depth: 1
+  frequency: 1
+  amplitude: 1
+  wavelength: 1
+  interval: 0
+  oneSide: 0
+  isInversion: 0
 --- !u!4 &735471030
 Transform:
   m_ObjectHideFlags: 0
