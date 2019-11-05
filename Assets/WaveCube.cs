@@ -36,38 +36,40 @@ public class WaveCube : MonoBehaviour {
     private int divisionNum = 0;
     CombineInstance[] combineInstanceAry;
 
-    private bool needReCulc;// = false;
+    private bool needReCulc = false;
 
 
     //外部初期化を受け付ける内容
     //分割数
-    [SerializeField]
-    private int division = 10;//{ get { return division; } set { needReCulc = true; division = value; } }// = 10;
+    [SerializeField, Header("分割数")]
+    private int division = 10;
     //縦y
+    [SerializeField, Header("縦y")]
     private float vertical = 1f;
     //横x
+    [SerializeField, Header("横x")]
     private float width = 6f;
     //奥行z
+    [SerializeField, Header("奥行z")]
     private float depth = 1f;
     //周波数
+    [SerializeField, Header("周波数")]
     private float frequency = 1f;
     //振幅
+    [SerializeField, Header("振幅")]
     private float amplitude = 1f;
     //波長
+    [SerializeField, Header("波長")]
     private float wavelength = 1f;
     //波の間隔
+    [SerializeField, Header("波の間隔")]
     private float interval = 0f;
     //波を片方だけにする（+側だけなど）
+    [SerializeField, Header("片面化"), Range(0, 2), Tooltip("0 上下\n1 上側だけ\n2 下側だけ")]
     private int oneSide = 0;
-    /* 0 上下
-     * 1 上だけ
-     * 2 下だけ
-     */
     //上下反転
+    [SerializeField, Header("上下反転")]
     private bool isInversion = false;
-
-    [SerializeField]
-    private int Division { get { return division; } set { needReCulc = true; division = value; } }
 
     void Start() {
         this.gameObject.AddComponent<MeshFilter>();
@@ -79,15 +81,24 @@ public class WaveCube : MonoBehaviour {
 
     void Update() {
         if (needReCulc) {
+            ChildrenDestroy();
             DisplayObject();
             needReCulc = false;
         }
     }
-    /*
-    private void CheckVariablesChange() {
+
+    //インスペクターからの変更時に再計算
+    private void OnValidate() {
         needReCulc = true;
     }
-    */
+
+    //子オブジェクトを全削除
+    private void ChildrenDestroy() {
+        foreach (Transform n in gameObject.transform) {
+            GameObject.Destroy(n.gameObject);
+        }
+    }
+
     private void DisplayObject() {
         // CombineMeshes()する時に使う配列   始端と終端も含めるので+3
         combineInstanceAry = new CombineInstance[division + 3];
@@ -158,10 +169,10 @@ public class WaveCube : MonoBehaviour {
         meshRenderer.material = material;
         //コライダーアタッチ
         //MeshCollider meshCollider = this.gameObject.AddComponent<MeshCollider>();
-        MeshCollider meshCollider = this.gameObject.GetComponent<MeshCollider>();
-        meshCollider.sharedMesh = mesh_filter.mesh;
-        meshCollider.convex = true;
-        meshCollider.isTrigger = true;
+        //MeshCollider meshCollider = this.gameObject.GetComponent<MeshCollider>();
+        //meshCollider.sharedMesh = mesh_filter.mesh;
+        //meshCollider.convex = true;
+        //meshCollider.isTrigger = true;
 
         //NormalMapの再計算
         mesh_filter.mesh.RecalculateNormals();
@@ -208,17 +219,17 @@ public class WaveCube : MonoBehaviour {
         //端面用
         if (divisionNum == 0) {
             //最初の端面
-            EndVertex[0] = vertex1;
-            EndVertex[1] = new Vector3(vertex1.x, vertex1.y, vertex1.z + depth);
-            EndVertex[2] = vertex3;
-            EndVertex[3] = new Vector3(vertex3.x, vertex3.y, vertex3.z + depth);
+            StartVertex[0] = vertex1;
+            StartVertex[1] = new Vector3(vertex1.x, vertex1.y, vertex1.z + depth);
+            StartVertex[2] = vertex3;
+            StartVertex[3] = new Vector3(vertex3.x, vertex3.y, vertex3.z + depth);
         }
         if (divisionNum == division) {
             //最後の端面
-            StartVertex[0] = new Vector3(vertex2.x, vertex2.y, vertex2.z + depth);
-            StartVertex[1] = vertex2;
-            StartVertex[2] = new Vector3(vertex4.x, vertex4.y, vertex4.z + depth);
-            StartVertex[3] = vertex4;
+            EndVertex[0] = new Vector3(vertex2.x, vertex2.y, vertex2.z + depth);
+            EndVertex[1] = vertex2;
+            EndVertex[2] = new Vector3(vertex4.x, vertex4.y, vertex4.z + depth);
+            EndVertex[3] = vertex4;
         }
 
         //デバッグ用
