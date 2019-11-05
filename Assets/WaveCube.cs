@@ -26,7 +26,7 @@ public class WaveCube : MonoBehaviour {
                                    5 + 8,  3 + 8,  7 + 8,
     };
     //分割数
-    private int division = 3;
+    private int division = 10;
     //縦y
     private float vertical = 1f;
     //横x
@@ -55,6 +55,11 @@ public class WaveCube : MonoBehaviour {
     //マテリアル
     public Material material;
 
+    //メッシュ
+    Mesh meshFirst;
+    Mesh mesh;
+    Mesh meshLast;
+
     //現在の分割部分（計算用）
     private int divisionNum = 0;
     CombineInstance[] combineInstanceAry;
@@ -78,7 +83,7 @@ public class WaveCube : MonoBehaviour {
             if (divisionNum == 0) {
                 //最初の一枚だけ別計算
                 //メッシュ作成
-                Mesh meshFirst = new Mesh();
+                meshFirst = new Mesh();
                 //メッシュリセット
                 meshFirst.Clear();
                 //メッシュへの頂点情報の追加
@@ -88,9 +93,9 @@ public class WaveCube : MonoBehaviour {
 
                 // 合成するMesh（同じMeshを円形に並べたMesh）
                 combineInstanceAry[0].mesh = meshFirst;
-                combineInstanceAry[0].transform = Matrix4x4.Translate(transform.position);
+                combineInstanceAry[0].transform = Matrix4x4.Translate(Vector3.zero);
             }
-            Mesh mesh = new Mesh();
+            mesh = new Mesh();
             //メッシュリセット
             mesh.Clear();
             //メッシュへの頂点情報の追加
@@ -100,12 +105,12 @@ public class WaveCube : MonoBehaviour {
 
             //合成するMesh（同じMeshを円形に並べたMesh）
             combineInstanceAry[divisionNum + 1].mesh = mesh;
-            combineInstanceAry[divisionNum + 1].transform = Matrix4x4.Translate(transform.position);
+            combineInstanceAry[divisionNum + 1].transform = Matrix4x4.Translate(Vector3.zero);
 
             if (divisionNum == division) {
                 //最後の一枚だけ別計算
                 //メッシュ作成
-                Mesh meshLast = new Mesh();
+                meshLast = new Mesh();
                 //メッシュリセット
                 meshLast.Clear();
                 //メッシュへの頂点情報の追加
@@ -115,8 +120,9 @@ public class WaveCube : MonoBehaviour {
 
                 // 合成するMesh（同じMeshを円形に並べたMesh）
                 combineInstanceAry[divisionNum + 2].mesh = meshLast;
-                combineInstanceAry[divisionNum + 2].transform = Matrix4x4.Translate(transform.position);
+                combineInstanceAry[divisionNum + 2].transform = Matrix4x4.Translate(Vector3.zero);
             }
+            Debug.Log("run " + divisionNum);
         }
         //合成した（する）メッシュ
         Mesh combinedMesh = new Mesh();
@@ -147,22 +153,18 @@ public class WaveCube : MonoBehaviour {
         Vector3 vertex1 = new Vector3(width / (float)division * (float)divisionNum,
                                       vertical,
                                       0);
-        //+ parentObj.transform.position;
         //上側手前右の頂点座標
-        Vector3 vertex2 = new Vector3(width / (float)division * (float)divisionNum,
+        Vector3 vertex2 = new Vector3(width / (float)division * (float)( divisionNum + 1 ),
                                       vertical,
                                       0);
-        //+ parentObj.transform.position;
         //下側手前左の頂点座標
         Vector3 vertex3 = new Vector3(width / (float)division * (float)divisionNum,
                                       0,
                                       0);
-        //+ parentObj.transform.position;
         //下側手前右の頂点座標
-        Vector3 vertex4 = new Vector3(width / (float)division * (float)divisionNum,
+        Vector3 vertex4 = new Vector3(width / (float)division * (float)( divisionNum + 1 ),
                                       0,
                                       0);
-        //+ parentObj.transform.position;
         //全頂点数8にそれぞれ座標が2つずつある
         for (int i = 0; i < 8 * 2; i++) {
             if (i % 8 == 0) {
@@ -184,7 +186,7 @@ public class WaveCube : MonoBehaviour {
             } else {
                 Debug.LogWarning("Calcration Error");
             }
-            Debug.Log("run"+i.ToString());
+            Debug.Log("run" + i.ToString());
         }
 
         //端面用
@@ -201,6 +203,39 @@ public class WaveCube : MonoBehaviour {
             EndVertex[2] = new Vector3(vertex4.x, vertex4.y, vertex4.z + depth);
             EndVertex[3] = vertex4;
         }
+
+        //デバッグ用
+        if (true && divisionNum == 0) {
+            for (int i = 0; i < EndVertex.Length; i++) {
+                GameObject marker = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                marker.transform.name = "FirstMarker";
+                marker.transform.parent = this.gameObject.transform;
+                marker.transform.localPosition = EndVertex[i];
+                marker.transform.localScale = Vector3.one * 0.1f;
+                marker.GetComponent<MeshRenderer>().material.color = Color.red;
+            }
+        } else if (true) {
+            for (int i = 0; i < SideVertex.Length / 4; i++) {
+                GameObject marker = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                marker.transform.name = "Marker " + i.ToString();
+                marker.transform.parent = this.gameObject.transform;
+                marker.transform.localPosition = SideVertex[i];
+                marker.transform.localScale = Vector3.one * 0.1f;
+                marker.GetComponent<MeshRenderer>().material.color = Color.cyan;
+            }
+        }
+        if (true && divisionNum == division) {
+            for (int i = 0; i < EndVertex.Length; i++) {
+                GameObject marker = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                marker.transform.name = "EndMarker";
+                marker.transform.parent = this.gameObject.transform;
+                marker.transform.localPosition = EndVertex[i];
+                marker.transform.localScale = Vector3.one * 0.1f;
+                marker.GetComponent<MeshRenderer>().material.color = Color.yellow;
+            }
+        }
+
+
     }
 
 }
