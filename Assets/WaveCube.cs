@@ -32,7 +32,7 @@ public class WaveCube : MonoBehaviour {
                                    7 + 8,  3 + 8,  1 + 8,
                                    5 + 8,  3 + 8,  7 + 8,
     };
-    
+
     //マテリアル
     public Material material;
 
@@ -63,30 +63,51 @@ public class WaveCube : MonoBehaviour {
     //振幅
     [SerializeField, Header("振幅")]
     private float amplitude = 1f;
-    //波長
+    //波長 t=1/f
     [SerializeField, Header("波長")]
     private float wavelength = 1f;
     //波の間隔
     [SerializeField, Header("波の間隔")]
     private float interval = 0f;
     //波を片方だけにする（+側だけなど）
-    [SerializeField, Header("片面化"), Range(0, 2), Tooltip("0 上下\n1 上側だけ\n2 下側だけ")]
-    private int oneSide = 0;
+    public enum OneSide {
+        both,
+        upSide,
+        downSide,
+    }
+    [SerializeField, Header("片面化")]
+    private OneSide oneSide = OneSide.both;
     //上下反転
     [SerializeField, Header("上下反転")]
     private bool isInversion = false;
+    //波の種類
+    public enum WaveType {
+        sin,
+        cos,
+        tan,
+    }
+    [SerializeField, Header("波の種類")]
+    private WaveType waveType = WaveType.sin;
+
 
     void Start() {
+        //必要なものをアタッチ
         mesh_filter = this.gameObject.AddComponent<MeshFilter>();
         meshRenderer = this.gameObject.AddComponent<MeshRenderer>();
     }
 
     void Update() {
         if (needReCulc) {
+            //今までのところに子オブジェクトがいればすべて消す
             ChildrenDestroy();
+            //直方体を表示する
             DisplayObject();
+            //計算後の頂点をまとめる
+            PutTogetherAllVertexKey();
+            //次のフレームでは処理しない
             needReCulc = false;
         }
+        GivePattern();
 
     }
 
@@ -102,6 +123,7 @@ public class WaveCube : MonoBehaviour {
         }
     }
 
+    //直方体を表示する
     private void DisplayObject() {
         // CombineMeshes()する時に使う配列   始端と終端も含めるので+3
         combineInstanceAry = new CombineInstance[division + 3];
@@ -169,25 +191,9 @@ public class WaveCube : MonoBehaviour {
 
         //NormalMapの再計算
         mesh_filter.mesh.RecalculateNormals();
-        
-        //meshのどの頂点がどの頂点になっているか
-        //事前に取得した頂点のそれぞれに当たる座標を検索する
-        for (int i = 0; i < AllVertex.Length; i++) {
-            //メッシュの頂点をひとつづつ見ていく
-            for (int j = 0; j < mesh_filter.mesh.vertexCount; j++) {
-                //事前の頂点とメッシュの頂点が重なるか
-                if (AllVertex[i] == mesh_filter.mesh.vertices[j]) {
-                    //見つけた頂点番号を保存するにあたり、既に同じ座標で見つけていないか確認
-                    for (int k = 0; k < AllVertexKey.GetLength(1); k++) {
-                        //まだ保存してない配列部分に保存
-                        if (AllVertexKey[i, k] == null)
-                            AllVertexKey[i, k] = j;
-                    }
-                }
-            }
-        }
     }
 
+    //直方体の素の頂点計算
     private void CalcVertices() {
 
         //上側手前左の頂点座標
@@ -276,4 +282,73 @@ public class WaveCube : MonoBehaviour {
         }
     }
 
+    //すべての頂点を必要にまとめる
+    private void PutTogetherAllVertexKey() {
+        //動作の重さ対策
+        int vertexCount = mesh_filter.mesh.vertexCount;
+        Vector3[] meshVertices = mesh_filter.mesh.vertices;
+        //meshのどの頂点がどの頂点になっているか
+        //事前に取得した頂点のそれぞれに当たる座標を検索する
+        for (int i = 0; i < AllVertex.Length; i++) {
+            //メッシュの頂点をひとつづつ見ていく
+            for (int j = 0; j < vertexCount; j++) {
+                //事前の頂点とメッシュの頂点が重なるか
+                if (AllVertex[i] == meshVertices[j]) {
+                    //見つけた頂点番号を保存するにあたり、既に同じ座標で見つけていないか確認
+                    for (int k = 0; k < AllVertexKey.GetLength(1); k++) {
+                        //まだ保存してない配列部分に保存
+                        if (AllVertexKey[i, k] == null)
+                            AllVertexKey[i, k] = j;
+                    }
+                }
+            }
+        }
+    }
+    //波を直方体にアタッチさせる
+    private void GivePattern() {
+        switch (waveType) {
+            case WaveType.sin:
+                List<Vector3> newMeshList=new List<Vector3>();
+                int vertexCount = mesh_filter.mesh.vertexCount;
+                Vector3[] meshVertices = mesh_filter.mesh.vertices;
+                for (int i = 0; i < vertexCount; i++) {
+                    newMeshList.Add(meshVertices[i]);
+                }
+                for (int i = 0; i < AllVertexKey.GetLength(0); i++) {
+                    //直方体の左端
+                    float firstX = AllVertex[0].x;
+                    //現在地
+                    float currentX = AllVertex[i].x;
+                    //直方体の右端
+                    float endX = AllVertex[AllVertex.Length-1].x;
+                    //
+                    float x = ( currentX - firstX ) / ( endX - firstX );
+                    float y = SinWave(x);
+                    for (int j = 0; j < AllVertexKey.GetLength(1); j++) {
+                        Vector3 vector = newMeshList[(int)AllVertexKey[i, j]];
+                        newMeshList[(int)AllVertexKey[i, j]] = new Vector3(vector.x,y,vector.z);
+                    }
+                }
+                mesh_filter.mesh.SetVertices(newMeshList);
+                break;
+            case WaveType.cos:
+                mesh_filter.mesh.vertices[0] = new Vector3(0, wavelength, 0);
+                AllVertex[0] = new Vector3(0, wavelength, 0);
+//                mesh_filter.mesh.SetVertices()
+                mesh_filter.mesh.RecalculateNormals();
+                break;
+            case WaveType.tan:
+                break;
+            default:
+                break;
+        }
+    }
+
+    //sin波を計算する
+    private float SinWave(float x) {
+        float y;
+        y = amplitude * Mathf.Sin(2 * Mathf.PI * frequency * x);
+        Debug.Log(y);
+        return y;
+    }
 }
