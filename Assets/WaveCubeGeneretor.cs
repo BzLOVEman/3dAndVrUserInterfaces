@@ -2,15 +2,16 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+//cubeを大量に配置する版。
 public class WaveCubeGeneretor : MonoBehaviour {
 	//頂点座標
 	Vector3[] StartVertex = new Vector3[4];
 	Vector3[] EndVertex = new Vector3[4];
 	Vector3[] SideVertex = new Vector3[16];
 	//全頂点
-	Vector3[] AllVertex;
+	//Vector3[] AllVertex;
 	//合成後のメッシュから座標の重なる頂点をまとめたもの
-	int?[,] AllVertexKey;
+	//int?[,] AllVertexKey;
 	//色の変更など
 	MeshRenderer meshRenderer;
 	//メッシュフィルター
@@ -43,9 +44,12 @@ public class WaveCubeGeneretor : MonoBehaviour {
 	private bool needReCulc = true;
 
 
+	//生成したキューブを格納
+	private GameObject[] generetedCubes;
+
 	//外部初期化を受け付ける内容
 	//分割数
-	[SerializeField, Header("分割数")]
+	[SerializeField, Header("分割数(Cube数)")]
 	private int division = 10;
 	//縦y
 	[SerializeField, Header("縦y")]
@@ -68,6 +72,9 @@ public class WaveCubeGeneretor : MonoBehaviour {
 	//波の間隔
 	[SerializeField, Header("波の間隔")]
 	private float interval = 0f;
+	//波の速度
+	[SerializeField, Header("波の速度")]
+	private float speed = 1f;
 	//波を片方だけにする（+側だけなど）
 	public enum OneSide {
 		both,
@@ -84,15 +91,13 @@ public class WaveCubeGeneretor : MonoBehaviour {
 		sin,
 		cos,
 		tan,
+		arbitrary,
 	}
 	[SerializeField, Header("波の種類")]
 	private WaveType waveType = WaveType.sin;
 
 
 	void Start() {
-		//必要なものをアタッチ
-		mesh_filter = this.gameObject.AddComponent<MeshFilter>();
-		meshRenderer = this.gameObject.AddComponent<MeshRenderer>();
 	}
 
 	void Update() {
@@ -100,14 +105,15 @@ public class WaveCubeGeneretor : MonoBehaviour {
 			//今までのところに子オブジェクトがいればすべて消す
 			ChildrenDestroy();
 			//直方体を表示する
-			DisplayObject();
+			for (divisionNum = 0; divisionNum < division; divisionNum++) {
+				DisplayObject();
+			}
 			//計算後の頂点をまとめる
-			PutTogetherAllVertexKey();
+			//PutTogetherAllVertexKey();
 			//次のフレームでは処理しない
 			needReCulc = false;
 		}
 		GivePattern();
-
 	}
 
 	//インスペクターからの変更時に再計算
@@ -117,67 +123,81 @@ public class WaveCubeGeneretor : MonoBehaviour {
 
 	//子オブジェクトを全削除
 	private void ChildrenDestroy() {
-		foreach (Transform n in gameObject.transform) {
-			Destroy(n.gameObject);
+		if (generetedCubes != null) {
+			foreach (GameObject n in generetedCubes) {
+				Destroy(n);
+			}
 		}
 	}
 
 	//直方体を表示する
 	private void DisplayObject() {
-		// CombineMeshes()する時に使う配列   始端と終端も含めるので+3
-		combineInstanceAry = new CombineInstance[division + 3];
+		//キューブ格納先を初期化
+		generetedCubes = new GameObject[division];
+		//キューブ用空オブジェクト生成
+		generetedCubes[divisionNum] = new GameObject(divisionNum.ToString());
+		generetedCubes[divisionNum].transform.position = new Vector3(width / ( division ) * ( divisionNum + 0 ),
+																			generetedCubes[divisionNum].transform.position.y,
+																			generetedCubes[divisionNum].transform.position.z);
+		//必要なものをアタッチ
+		mesh_filter = this.generetedCubes[divisionNum].AddComponent<MeshFilter>();
+		meshRenderer = this.generetedCubes[divisionNum].AddComponent<MeshRenderer>();
 
-		AllVertex = new Vector3[4 + division * 4 + 4];
-		AllVertexKey = new int?[4 + division * 4 + 4, 4];
+
+		// CombineMeshes()する時に使う配列   始端と終端も含めるので+3
+		combineInstanceAry = new CombineInstance[/*division +*/ 3];
+
+		//AllVertex = new Vector3[4 + /*division * 4 +*/ 4];
+		//AllVertexKey = new int?[4 + /*division * 4 +*/ 4, 4];
 
 		//メッシュ作成
-		for (divisionNum = 0; divisionNum <= division; divisionNum++) {
-			//頂点計算
-			CalcVertices();
+		//for (divisionNum = 0; divisionNum <= /*division*/0; divisionNum++) {
+		//頂点計算
+		CalcVertices();
 
-			if (divisionNum == 0) {
-				//最初の一枚だけ別計算
-				//メッシュ作成
-				Mesh meshFirst = new Mesh();
-				//メッシュリセット
-				meshFirst.Clear();
-				//メッシュへの頂点情報の追加
-				meshFirst.vertices = StartVertex;
-				//メッシュへの面情報の追加
-				meshFirst.triangles = EndFace;
+		//if (divisionNum == 0) {
+		//最初の一枚
+		//メッシュ作成
+		Mesh meshFirst = new Mesh();
+		//メッシュリセット
+		meshFirst.Clear();
+		//メッシュへの頂点情報の追加
+		meshFirst.vertices = StartVertex;
+		//メッシュへの面情報の追加
+		meshFirst.triangles = EndFace;
 
-				// 合成するMesh（同じMeshを円形に並べたMesh）
-				combineInstanceAry[0].mesh = meshFirst;
-				combineInstanceAry[0].transform = Matrix4x4.Translate(Vector3.zero);
-			}
-			Mesh mesh = new Mesh();
-			//メッシュリセット
-			mesh.Clear();
-			//メッシュへの頂点情報の追加
-			mesh.vertices = SideVertex;
-			//メッシュへの面情報の追加
-			mesh.triangles = SideFace;
+		// 合成するMesh（同じMeshを円形に並べたMesh）
+		combineInstanceAry[0].mesh = meshFirst;
+		combineInstanceAry[0].transform = Matrix4x4.Translate(Vector3.zero);
+		//}
+		Mesh mesh = new Mesh();
+		//メッシュリセット
+		mesh.Clear();
+		//メッシュへの頂点情報の追加
+		mesh.vertices = SideVertex;
+		//メッシュへの面情報の追加
+		mesh.triangles = SideFace;
 
-			//合成するMesh（同じMeshを円形に並べたMesh）
-			combineInstanceAry[divisionNum + 1].mesh = mesh;
-			combineInstanceAry[divisionNum + 1].transform = Matrix4x4.Translate(Vector3.zero);
+		//合成するMesh（同じMeshを円形に並べたMesh）
+		combineInstanceAry[1].mesh = mesh;
+		combineInstanceAry[1].transform = Matrix4x4.Translate(Vector3.zero);
 
-			if (divisionNum == division) {
-				//最後の一枚だけ別計算
-				//メッシュ作成
-				Mesh meshLast = new Mesh();
-				//メッシュリセット
-				meshLast.Clear();
-				//メッシュへの頂点情報の追加
-				meshLast.vertices = EndVertex;
-				//メッシュへの面情報の追加
-				meshLast.triangles = EndFace;
+		//if (divisionNum == /*division*/0) {
+		//最後の一枚
+		//メッシュ作成
+		Mesh meshLast = new Mesh();
+		//メッシュリセット
+		meshLast.Clear();
+		//メッシュへの頂点情報の追加
+		meshLast.vertices = EndVertex;
+		//メッシュへの面情報の追加
+		meshLast.triangles = EndFace;
 
-				// 合成するMesh（同じMeshを円形に並べたMesh）
-				combineInstanceAry[divisionNum + 2].mesh = meshLast;
-				combineInstanceAry[divisionNum + 2].transform = Matrix4x4.Translate(Vector3.zero);
-			}
-		}
+		// 合成するMesh（同じMeshを円形に並べたMesh）
+		combineInstanceAry[2].mesh = meshLast;
+		combineInstanceAry[2].transform = Matrix4x4.Translate(Vector3.zero);
+		//}
+		//}
 		//合成した（する）メッシュ
 		Mesh combinedMesh = new Mesh();
 		combinedMesh.name = transform.name;
@@ -190,19 +210,29 @@ public class WaveCubeGeneretor : MonoBehaviour {
 
 		//NormalMapの再計算
 		mesh_filter.mesh.RecalculateNormals();
+		//できたら子供に。
+		generetedCubes[divisionNum].transform.parent = this.gameObject.transform;
 	}
 
 	//直方体の素の頂点計算
 	private void CalcVertices() {
-
+		/*
+				//上側手前左の頂点座標
+				Vector3 vertex1 = new Vector3(width / ( division ) * ( divisionNum + 0 ), vertical, 0);
+				//上側手前右の頂点座標
+				Vector3 vertex2 = new Vector3(width / ( division ) * ( divisionNum + 1 ), vertical, 0);
+				//下側手前左の頂点座標
+				Vector3 vertex3 = new Vector3(width / ( division ) * ( divisionNum + 0 ), 0, 0);
+				//下側手前右の頂点座標
+				Vector3 vertex4 = new Vector3(width / ( division ) * ( divisionNum + 1 ), 0, 0);*/
 		//上側手前左の頂点座標
-		Vector3 vertex1 = new Vector3(width / ( division + 1 ) * ( divisionNum + 0 ), vertical, 0);
+		Vector3 vertex1 = new Vector3(width / ( division + 0 ) * 0, vertical, 0);
 		//上側手前右の頂点座標
-		Vector3 vertex2 = new Vector3(width / ( division + 1 ) * ( divisionNum + 1 ), vertical, 0);
+		Vector3 vertex2 = new Vector3(width / ( division + 0 ), vertical, 0);
 		//下側手前左の頂点座標
-		Vector3 vertex3 = new Vector3(width / ( division + 1 ) * ( divisionNum + 0 ), 0, 0);
+		Vector3 vertex3 = new Vector3(width / ( division + 0 ) * 0, 0, 0);
 		//下側手前右の頂点座標
-		Vector3 vertex4 = new Vector3(width / ( division + 1 ) * ( divisionNum + 1 ), 0, 0);
+		Vector3 vertex4 = new Vector3(width / ( division + 0 ), 0, 0);
 		//全頂点数8にそれぞれ座標が2つずつある
 		for (int i = 0; i < 8 * 2; i++) {
 			if (i % 8 == 0) {
@@ -227,24 +257,24 @@ public class WaveCubeGeneretor : MonoBehaviour {
 		}
 
 		//端面用
-		if (divisionNum == 0) {
-			//最初の端面
-			StartVertex[0] = vertex1;
-			StartVertex[1] = new Vector3(vertex1.x, vertex1.y, vertex1.z + depth);
-			StartVertex[2] = vertex3;
-			StartVertex[3] = new Vector3(vertex3.x, vertex3.y, vertex3.z + depth);
-		}
-		if (divisionNum == division) {
-			//最後の端面
-			EndVertex[0] = new Vector3(vertex2.x, vertex2.y, vertex2.z + depth);
-			EndVertex[1] = vertex2;
-			EndVertex[2] = new Vector3(vertex4.x, vertex4.y, vertex4.z + depth);
-			EndVertex[3] = vertex4;
-		}
+		//if (divisionNum == 0) {
+		//最初の端面
+		StartVertex[0] = vertex1;
+		StartVertex[1] = new Vector3(vertex1.x, vertex1.y, vertex1.z + depth);
+		StartVertex[2] = vertex3;
+		StartVertex[3] = new Vector3(vertex3.x, vertex3.y, vertex3.z + depth);
+		//}
+		//if (divisionNum == /*division*/0) {
+		//最後の端面
+		EndVertex[0] = new Vector3(vertex2.x, vertex2.y, vertex2.z + depth);
+		EndVertex[1] = vertex2;
+		EndVertex[2] = new Vector3(vertex4.x, vertex4.y, vertex4.z + depth);
+		EndVertex[3] = vertex4;
+		//}
 
 		//デバッグ用
 		//頂点に球を付ける
-		if (true && divisionNum == 0) {
+		/*if (true && divisionNum == 0) {
 			for (int i = 0; i < StartVertex.Length; i++) {
 				GameObject marker = GameObject.CreatePrimitive(PrimitiveType.Sphere);
 				marker.transform.name = "FirstMarker";
@@ -263,7 +293,7 @@ public class WaveCubeGeneretor : MonoBehaviour {
 				marker.GetComponent<MeshRenderer>().material.color = Color.cyan;
 			}
 		}
-		if (true && divisionNum == division) {
+		if (true && divisionNum == /*division*//*0) {
 			for (int i = 0; i < EndVertex.Length; i++) {
 				GameObject marker = GameObject.CreatePrimitive(PrimitiveType.Sphere);
 				marker.transform.name = "EndMarker";
@@ -272,17 +302,17 @@ public class WaveCubeGeneretor : MonoBehaviour {
 				marker.transform.localScale = Vector3.one * 0.1f;
 				marker.GetComponent<MeshRenderer>().material.color = Color.yellow;
 			}
-		}
+		}*/
 
 		//全頂点を保持
-		for (int i = 0; i < SideVertex.Length / 2; i++) {
+		/*for (int i = 0; i < SideVertex.Length / 2; i++) {
 			//4つ飛ばしで8つ保存することで、端面の頂点までカバー
 			AllVertex[divisionNum * SideVertex.Length / 4 + i] = SideVertex[i];
-		}
+		}*/
 	}
 
 	//すべての頂点を必要にまとめる
-	private void PutTogetherAllVertexKey() {
+	/*private void PutTogetherAllVertexKey() {
 		//動作の重さ対策
 		int vertexCount = mesh_filter.mesh.vertexCount;
 		Vector3[] meshVertices = mesh_filter.mesh.vertices;
@@ -302,11 +332,17 @@ public class WaveCubeGeneretor : MonoBehaviour {
 				}
 			}
 		}
-	}
+	}*/
 
 	//波を直方体にアタッチさせる
 	private void GivePattern() {
-		switch (waveType) {
+		for (divisionNum = 0; divisionNum < division; divisionNum++) {
+			generetedCubes[divisionNum].transform.position = new Vector3(generetedCubes[divisionNum].transform.position.x,
+																				CalcY(generetedCubes[divisionNum].transform.position.x),
+																				generetedCubes[divisionNum].transform.position.z);
+			//Debug.Log(CalcY(0.5f));
+		}
+		/*switch (waveType) {
 			case WaveType.sin:
 				List<Vector3> newMeshList = new List<Vector3>();
 				int vertexCount = mesh_filter.mesh.vertexCount;
@@ -323,7 +359,7 @@ public class WaveCubeGeneretor : MonoBehaviour {
 					float endX = AllVertex[AllVertex.Length - 1].x;
 					//
 					float x = ( currentX - firstX ) / ( endX - firstX );
-					float y = SinWave(x);
+					float y = CalcY(x);
 					for (int j = 0; j < AllVertexKey.GetLength(1); j++) {
 						Vector3 vector = newMeshList[(int)AllVertexKey[i, j]];
 						newMeshList[(int)AllVertexKey[i, j]] = new Vector3(vector.x, y, vector.z);
@@ -341,14 +377,52 @@ public class WaveCubeGeneretor : MonoBehaviour {
 				break;
 			default:
 				break;
+		}*/
+	}
+
+	//ｘ軸の入力からｙ軸の出力を得る
+	private float CalcY(float x) {
+		if (waveType == WaveType.sin) {
+			return SinWave(x);
+		} else if (waveType == WaveType.cos) {
+			return CosWave(x);
+		} else if (waveType == WaveType.tan) {
+			return TanWave(x);
+		} else if (waveType == WaveType.arbitrary) {
+			return ArbitraryWave(x);
+		} else {
+			//error
+			Debug.LogWarning("波の計算種類に異常があります。");
+			return 0f;
 		}
 	}
 
 	//sin波を計算する
 	private float SinWave(float x) {
 		float y;
-		y = amplitude * Mathf.Sin(2 * Mathf.PI * frequency * x);
-		Debug.Log(y);
+		y = amplitude * Mathf.Sin(2 * Mathf.PI * frequency * x * Time.deltaTime * speed);
+		return y;
+	}
+
+	//cos波を計算する
+	private float CosWave(float x) {
+		float y;
+		y = amplitude * Mathf.Cos(2 * Mathf.PI * frequency * x * Time.deltaTime * speed);
+		return y;
+	}
+
+	//tan波を計算する
+	private float TanWave(float x) {
+		float y;
+		y = amplitude * Mathf.Tan(2 * Mathf.PI * frequency * x * Time.deltaTime * speed);
+		return y;
+	}
+
+	//任意の波
+	//自由にお使いください。
+	private float ArbitraryWave(float x) {
+		float y;
+		y = 0;
 		return y;
 	}
 }

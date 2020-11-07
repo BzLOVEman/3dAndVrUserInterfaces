@@ -2,8 +2,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+//キューブ一個でどうにかしようとした版
+//だめっだった。おもてぇ。
 public class WaveCube : MonoBehaviour {
-
 	//頂点座標
 	Vector3[] StartVertex = new Vector3[4];
 	Vector3[] EndVertex = new Vector3[4];
@@ -85,6 +86,7 @@ public class WaveCube : MonoBehaviour {
 		sin,
 		cos,
 		tan,
+		arbitrary,
 	}
 	[SerializeField, Header("波の種類")]
 	private WaveType waveType = WaveType.sin;
@@ -107,7 +109,7 @@ public class WaveCube : MonoBehaviour {
 			//次のフレームでは処理しない
 			needReCulc = false;
 		}
-		GivePattern();
+		//GivePattern();
 
 	}
 
@@ -304,6 +306,7 @@ public class WaveCube : MonoBehaviour {
 			}
 		}
 	}
+
 	//波を直方体にアタッチさせる
 	private void GivePattern() {
 		switch (waveType) {
@@ -323,7 +326,7 @@ public class WaveCube : MonoBehaviour {
 					float endX = AllVertex[AllVertex.Length - 1].x;
 					//
 					float x = ( currentX - firstX ) / ( endX - firstX );
-					float y = SinWave(x);
+					float y = CalcY(x);
 					for (int j = 0; j < AllVertexKey.GetLength(1); j++) {
 						Vector3 vector = newMeshList[(int)AllVertexKey[i, j]];
 						newMeshList[(int)AllVertexKey[i, j]] = new Vector3(vector.x, y, vector.z);
@@ -344,11 +347,49 @@ public class WaveCube : MonoBehaviour {
 		}
 	}
 
+	//ｘ軸の入力からｙ軸の出力を得る
+	private float CalcY(float x) {
+		if (waveType == WaveType.sin) {
+			return SinWave(x);
+		} else if (waveType == WaveType.cos) {
+			return CosWave(x);
+		} else if (waveType == WaveType.tan) {
+			return TanWave(x);
+		} else if (waveType == WaveType.arbitrary) {
+			return ArbitraryWave(x);
+		} else {
+			//error
+			Debug.LogWarning("波の計算種類に異常があります。");
+			return 0f;
+		}
+	}
+
 	//sin波を計算する
 	private float SinWave(float x) {
 		float y;
 		y = amplitude * Mathf.Sin(2 * Mathf.PI * frequency * x);
-		Debug.Log(y);
+		return y;
+	}
+
+	//cos波を計算する
+	private float CosWave(float x) {
+		float y;
+		y = amplitude * Mathf.Cos(2 * Mathf.PI * frequency * x);
+		return y;
+	}
+
+	//tan波を計算する
+	private float TanWave(float x) {
+		float y;
+		y = amplitude * Mathf.Tan(2 * Mathf.PI * frequency * x);
+		return y;
+	}
+
+	//任意の波
+	//自由にお使いください。
+	private float ArbitraryWave(float x) {
+		float y;
+		y = 0;
 		return y;
 	}
 }
