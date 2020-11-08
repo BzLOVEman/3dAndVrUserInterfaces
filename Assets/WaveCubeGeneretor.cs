@@ -98,6 +98,10 @@ public class WaveCubeGeneretor : MonoBehaviour {
 
 
 	void Start() {
+			generetedCubes = new GameObject[division];
+			for (divisionNum = 0; divisionNum < division; divisionNum++) {
+				DisplayObject();
+			}
 	}
 
 	void Update() {
@@ -105,6 +109,8 @@ public class WaveCubeGeneretor : MonoBehaviour {
 			//今までのところに子オブジェクトがいればすべて消す
 			ChildrenDestroy();
 			//直方体を表示する
+			//キューブ格納先を初期化
+			generetedCubes = new GameObject[division];
 			for (divisionNum = 0; divisionNum < division; divisionNum++) {
 				DisplayObject();
 			}
@@ -132,8 +138,6 @@ public class WaveCubeGeneretor : MonoBehaviour {
 
 	//直方体を表示する
 	private void DisplayObject() {
-		//キューブ格納先を初期化
-		generetedCubes = new GameObject[division];
 		//キューブ用空オブジェクト生成
 		generetedCubes[divisionNum] = new GameObject(divisionNum.ToString());
 		generetedCubes[divisionNum].transform.position = new Vector3(width / ( division ) * ( divisionNum + 0 ),
