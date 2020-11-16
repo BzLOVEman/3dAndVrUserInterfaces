@@ -340,6 +340,7 @@ public class WaveCubeGeneretor : MonoBehaviour {
 
 	//波を直方体にアタッチさせる
 	private void GivePattern() {
+		Debug.log("run");
 		for (divisionNum = 0; divisionNum < division; divisionNum++) {
 			generetedCubes[divisionNum].transform.position = new Vector3(generetedCubes[divisionNum].transform.position.x,
 																				CalcY(generetedCubes[divisionNum].transform.position.x),
@@ -386,6 +387,7 @@ public class WaveCubeGeneretor : MonoBehaviour {
 
 	//ｘ軸の入力からｙ軸の出力を得る
 	private float CalcY(float x) {
+		Debug.log("run");
 		if (waveType == WaveType.sin) {
 			return SinWave(x);
 		} else if (waveType == WaveType.cos) {
@@ -404,7 +406,8 @@ public class WaveCubeGeneretor : MonoBehaviour {
 	//sin波を計算する
 	private float SinWave(float x) {
 		float y;
-		y = amplitude * Mathf.Sin(2 * Mathf.PI * frequency * x * Time.deltaTime * speed);
+		Debug.log(Time.realtimeSinceStartup);
+		y = amplitude * Mathf.Sin(2 * Mathf.PI * frequency * (x+ Time.realtimeSinceStartup) * speed);
 		return y;
 	}
 
