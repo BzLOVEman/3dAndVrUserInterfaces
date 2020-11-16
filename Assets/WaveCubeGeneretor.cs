@@ -98,10 +98,10 @@ public class WaveCubeGeneretor : MonoBehaviour {
 
 
 	void Start() {
-			generetedCubes = new GameObject[division];
-			for (divisionNum = 0; divisionNum < division; divisionNum++) {
-				DisplayObject();
-			}
+		generetedCubes = new GameObject[division];
+		for (divisionNum = 0; divisionNum < division; divisionNum++) {
+			DisplayObject();
+		}
 	}
 
 	void Update() {
@@ -342,10 +342,10 @@ public class WaveCubeGeneretor : MonoBehaviour {
 	private void GivePattern() {
 		Debug.log("run");
 		for (divisionNum = 0; divisionNum < division; divisionNum++) {
-			generetedCubes[divisionNum].transform.position = new Vector3(generetedCubes[divisionNum].transform.position.x,
-																				CalcY(generetedCubes[divisionNum].transform.position.x),
-																				generetedCubes[divisionNum].transform.position.z);
-			//Debug.Log(CalcY(0.5f));
+			generetedCubes[divisionNum].transform.localPosition = new Vector3(generetedCubes[divisionNum].transform.localPosition.x,
+																				CalcY(/*generetedCubes[divisionNum].transform.localPosition.x*/int.Parse(generetedCubes[divisionNum].name) / (float)( division - 1 )),
+																				generetedCubes[divisionNum].transform.localPosition.z);
+			Debug.Log(int.Parse(generetedCubes[divisionNum].name) / (float)( division - 1 ));
 		}
 		/*switch (waveType) {
 			case WaveType.sin:
@@ -403,11 +403,19 @@ public class WaveCubeGeneretor : MonoBehaviour {
 		}
 	}
 
+	//周期を全体の長さに合わせる
+	private float FrequencyNormalization(float frequencyLocal) {
+		float T =/* 1f / */width;
+		T *= frequencyLocal;
+		return T;
+	}
+
 	//sin波を計算する
 	private float SinWave(float x) {
 		float y;
 		Debug.log(Time.realtimeSinceStartup);
-		y = amplitude * Mathf.Sin(2 * Mathf.PI * frequency * (x+ Time.realtimeSinceStartup) * speed);
+		y = amplitude * Mathf.Sin(2 * Mathf.PI * FrequencyNormalization(frequency) * ( x /*/ width*/ )/* * ( Time.deltaTime * speed )*/);
+		y = amplitude * Mathf.Sin(2 * Mathf.PI * frequency * ( x + Time.realtimeSinceStartup ) * speed);
 		return y;
 	}
 

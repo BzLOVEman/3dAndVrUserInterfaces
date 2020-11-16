@@ -190,11 +190,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   material: {fileID: 2100000, guid: b5bea8fdb9a3cfc4aa5298d8a14f853f, type: 2}
-  division: 30
+  division: 100
   vertical: 1
   width: 10
   depth: 1
-  frequency: 0.1
+  frequency: 1
   amplitude: 1
   wavelength: 1
   interval: 0
