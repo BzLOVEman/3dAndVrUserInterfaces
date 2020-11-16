@@ -340,7 +340,7 @@ public class WaveCubeGeneretor : MonoBehaviour {
 
 	//波を直方体にアタッチさせる
 	private void GivePattern() {
-		Debug.log("run");
+		//Debug.log("run");
 		for (divisionNum = 0; divisionNum < division; divisionNum++) {
 			generetedCubes[divisionNum].transform.localPosition = new Vector3(generetedCubes[divisionNum].transform.localPosition.x,
 																				CalcY(/*generetedCubes[divisionNum].transform.localPosition.x*/int.Parse(generetedCubes[divisionNum].name) / (float)( division - 1 )),
@@ -387,7 +387,7 @@ public class WaveCubeGeneretor : MonoBehaviour {
 
 	//ｘ軸の入力からｙ軸の出力を得る
 	private float CalcY(float x) {
-		Debug.log("run");
+		//Debug.log("run");
 		if (waveType == WaveType.sin) {
 			return SinWave(x);
 		} else if (waveType == WaveType.cos) {
@@ -405,7 +405,7 @@ public class WaveCubeGeneretor : MonoBehaviour {
 
 	//周期を全体の長さに合わせる
 	private float FrequencyNormalization(float frequencyLocal) {
-		float T =/* 1f / */width;
+		float T = 1f / width;
 		T *= frequencyLocal;
 		return T;
 	}
@@ -413,9 +413,13 @@ public class WaveCubeGeneretor : MonoBehaviour {
 	//sin波を計算する
 	private float SinWave(float x) {
 		float y;
-		Debug.log(Time.realtimeSinceStartup);
-		y = amplitude * Mathf.Sin(2 * Mathf.PI * FrequencyNormalization(frequency) * ( x /*/ width*/ )/* * ( Time.deltaTime * speed )*/);
-		y = amplitude * Mathf.Sin(2 * Mathf.PI * frequency * ( x + Time.realtimeSinceStartup ) * speed);
+		//Debug.log(Time.realtimeSinceStartup);
+		//失敗
+		//y = amplitude * Mathf.Sin(2 * Mathf.PI * FrequencyNormalization(frequency) * ( x /*/ width*/ )/* * ( Time.deltaTime * speed )*/);
+		//成功
+		//y = amplitude * Mathf.Sin(2 * Mathf.PI * frequency * ( x + Time.realtimeSinceStartup ) * speed);
+		//
+		y = amplitude * Mathf.Sin(2 * Mathf.PI * FrequencyNormalization(frequency) * ( x /*/ width*/ + Time.realtimeSinceStartup ) * speed);
 		return y;
 	}
 
