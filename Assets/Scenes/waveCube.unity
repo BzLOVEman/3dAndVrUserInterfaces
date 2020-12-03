@@ -198,7 +198,7 @@ MonoBehaviour:
   amplitude: 1
   wavelength: 1
   interval: 0
-  speed: 1
+  speed: 10
   oneSide: 0
   isInversion: 0
   waveType: 0
