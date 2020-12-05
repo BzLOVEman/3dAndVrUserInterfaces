@@ -189,7 +189,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6935d2aaba8978f4cb5772af8c2d4f0b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  material: {fileID: 2100000, guid: b5bea8fdb9a3cfc4aa5298d8a14f853f, type: 2}
+  material1: {fileID: 2100000, guid: b5bea8fdb9a3cfc4aa5298d8a14f853f, type: 2}
+  material2: {fileID: 2100000, guid: 58c0e1ea1080a7947ad16c806e625124, type: 2}
+  percent: 0.589
   division: 100
   vertical: 1
   width: 10
@@ -198,7 +200,7 @@ MonoBehaviour:
   amplitude: 1
   wavelength: 1
   interval: 0
-  speed: 10
+  speed: 1
   oneSide: 0
   isInversion: 0
   waveType: 0
