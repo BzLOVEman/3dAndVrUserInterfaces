@@ -199,7 +199,7 @@ public class WaveCubeGeneretor : MonoBehaviour {
 		//メッシュアタッチ
 		mesh_filter.mesh = combinedMesh;
 		//レンダラーにマテリアルアタッチ
-		if (divisionNum < percent * 100) {
+		if ((float)divisionNum / division < percent) {
 			meshRenderer.material = material1;
 		} else {
 			meshRenderer.material = material2;
@@ -259,9 +259,15 @@ public class WaveCubeGeneretor : MonoBehaviour {
 	//波を直方体にアタッチさせる
 	private void GivePattern() {
 		for (divisionNum = 0; divisionNum < division; divisionNum++) {
-			generetedCubes[divisionNum].transform.localPosition = new Vector3(generetedCubes[divisionNum].transform.localPosition.x,
-																				CalcY(int.Parse(generetedCubes[divisionNum].name) / (float)( division - 1 )),
-																				generetedCubes[divisionNum].transform.localPosition.z);
+			if (division > 1) {
+				generetedCubes[divisionNum].transform.localPosition = new Vector3(generetedCubes[divisionNum].transform.localPosition.x,
+																					CalcY(int.Parse(generetedCubes[divisionNum].name) / (float)( division - 1 )),
+																					generetedCubes[divisionNum].transform.localPosition.z);
+			} else {
+				generetedCubes[divisionNum].transform.localPosition = new Vector3(generetedCubes[divisionNum].transform.localPosition.x,
+																					CalcY(int.Parse(generetedCubes[divisionNum].name) / 1f),
+																					generetedCubes[divisionNum].transform.localPosition.z);
+			}
 		}
 	}
 
