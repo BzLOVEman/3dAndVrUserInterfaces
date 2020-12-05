@@ -139,9 +139,9 @@ public class WaveCubeGeneretor : MonoBehaviour {
 	private void DisplayObject() {
 		//キューブ用空オブジェクト生成
 		generetedCubes[divisionNum] = new GameObject(divisionNum.ToString());
-		generetedCubes[divisionNum].transform.position = new Vector3(width / ( division ) * ( divisionNum + 0 ),
-																			generetedCubes[divisionNum].transform.position.y,
-																			generetedCubes[divisionNum].transform.position.z);
+		generetedCubes[divisionNum].transform.position = new Vector3(width / ( division ) * ( divisionNum + 0 ) + transform.position.x,
+																			generetedCubes[divisionNum].transform.position.y + transform.position.y,
+																			generetedCubes[divisionNum].transform.position.z + transform.position.z);
 		//必要なものをアタッチ
 		mesh_filter = this.generetedCubes[divisionNum].AddComponent<MeshFilter>();
 		meshRenderer = this.generetedCubes[divisionNum].AddComponent<MeshRenderer>();
