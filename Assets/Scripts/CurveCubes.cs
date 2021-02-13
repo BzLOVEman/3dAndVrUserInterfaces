@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 //cubeを大量に配置する版。
-public class WaveCubeGeneretor : MonoBehaviour {
+public class CurveCubes : MonoBehaviour {
 	//頂点座標
 	Vector3[] StartVertex = new Vector3[4];
 	Vector3[] EndVertex = new Vector3[4];
@@ -97,6 +97,7 @@ public class WaveCubeGeneretor : MonoBehaviour {
 	[SerializeField, Header("波の種類")]
 	private WaveType waveType = WaveType.sin;
 
+	
 
 	void Start() {
 		generetedCubes = new GameObject[division];
